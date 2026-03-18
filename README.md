@@ -1,4 +1,5 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 # FinanScape - Financial Conversation Intelligence System
 
 FinanScape is an AI-powered multilingual system that detects financial conversations, records audio, transcribes it, and converts unstructured discussions into structured financial insights.
@@ -84,3 +85,7 @@ By leveraging Groq, FinanScape provides near-instantaneous speech-to-text and LL
 3. Click the microphone icon and speak organically about your financial planning (e.g., "I am thinking of starting a new SIP of 5000 rupees and taking a loan for a car").
 4. Click stop. The application will immediately utilize Groq Whisper and stream the resultant LLM insights back to your dashboard in real-time.
 =======
+=======
+# FinanScape
+FinanScape is an AI-powered multilingual system that detects financial conversations, records audio, transcribes it, and converts unstructured discussions into structured financial insights.
+>>>>>>> 65140fdfb51d25d64f3c68eee1caf9379261dbd5

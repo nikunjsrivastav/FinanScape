@@ -8,13 +8,14 @@ from flask_cors import CORS
 from groq import Groq
 from dotenv import load_dotenv
 
-load_dotenv()
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+load_dotenv(os.path.join(BASE_DIR, '.env'))
 
 app = Flask(__name__)
 CORS(app)
 
-DB_PATH = 'conversations.db'
-UPLOAD_FOLDER = 'uploads'
+DB_PATH = os.path.join(BASE_DIR, 'conversations.db')
+UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads')
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 try:
@@ -73,6 +74,8 @@ def upload_audio():
     file.save(filepath)
 
     if not groq_client:
+        if os.path.exists(filepath):
+            os.remove(filepath)
         return jsonify({'error': 'Groq API Key not configured'}), 500
 
     # 1. Transcribe with Whisper (Groq)

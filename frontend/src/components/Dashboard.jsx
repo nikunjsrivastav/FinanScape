@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FileText, TrendingUp, Tags, Loader, Trash2, CheckCircle2, Headphones } from 'lucide-react';
 
@@ -175,27 +175,37 @@ export default function Dashboard() {
     };
   };
 
-  const renderEntities = (text) => {
-    // Entities often generated as "1. EMI, 2. SIP..." or list. We split by punctuation
-    const words = text.split(/[\n,]/)
-      .map(w => w.replace(/^[\d\.\-\*\s]+/, '').trim())
+  const getEntityItems = (text = '') => {
+    return text.split(/[\n,]/)
+      .map(w => w.replace(/^[\d\.\-\*\u2022]+\s*/, '').trim())
       .filter(w => w.length > 2 && !w.toLowerCase().includes('not mentioned'));
+  };
+
+  const getListItems = (text = '') => {
+    return text
+      .split('\n')
+      .map(item => item.replace(/^[\d\.\-\*\u2022]+\s*/, '').trim())
+      .filter(Boolean);
+  };
+
+  const isPlaceholderItem = (item) => /^(none mentioned|not mentioned|n\/a|none)$/i.test(item);
+
+  const renderEntities = (items) => {
     return (
       <div className="entity-list">
-        {words.length > 0 ? words.map((w, i) => (
+        {items.length > 0 ? items.map((w, i) => (
           <span key={i} className="entity-pill">{w}</span>
         )) : <span className="text-muted">{isStreaming ? 'Detecting...' : 'No specific entities detected.'}</span>}
       </div>
     );
   };
 
-  const renderSimpleList = (text) => {
-    if (!text) return <span className="text-muted">{isStreaming ? 'Analyzing...' : 'N/A'}</span>;
-    const items = text.split('\n').map(i => i.trim()).filter(i => i.length > 0);
+  const renderSimpleList = (items, emptyLabel = 'N/A') => {
+    if (!items.length) return <span className="text-muted">{emptyLabel}</span>;
     return (
       <ul className="insight-list">
         {items.map((item, idx) => (
-          <li key={idx}>{item.replace(/^[\d\.\-\*\s]+/, '')}</li>
+          <li key={idx}>{item}</li>
         ))}
       </ul>
     );
@@ -301,45 +311,73 @@ export default function Dashboard() {
     );
   }
 
+  const entityItems = getEntityItems(entities);
+  const metricItems = getListItems(metrics).filter(item => !isPlaceholderItem(item));
+  const nextStepItems = getListItems(nextSteps).filter(item => !isPlaceholderItem(item));
+
   return (
-    <div>
-      <div className="dashboard-grid">
-        <div className="insight-card glass-panel">
-          <h3><FileText size={20} /> Summary</h3>
-          <div className="streaming-text">{summary || (isStreaming ? <Loader size={16} className="animate-spin" /> : "N/A")}</div>
+    <div className="dashboard-report">
+      {streamError && (
+        <div className="glass-panel error-banner">
+          {streamError}
+        </div>
+      )}
+
+      <div className="insight-card glass-panel summary-card">
+        <h3><FileText size={20} /> Summary</h3>
+        <div className="streaming-text">{summary || (isStreaming ? <Loader size={16} className="animate-spin" /> : "N/A")}</div>
+      </div>
+
+      <div className="dashboard-layout">
+        <div className="dashboard-main">
+          <div className="insight-card glass-panel">
+            <h3><TrendingUp size={20} /> Actionable Insights</h3>
+            <div className="streaming-text">{insights || (isStreaming ? <Loader size={16} className="animate-spin" /> : "N/A")}</div>
+          </div>
+
+          <div className="insight-card glass-panel snapshot-card">
+            <h3><Tags size={20} /> Financial Snapshot</h3>
+
+            <div className="snapshot-section">
+              <div className="snapshot-label">Entities</div>
+              {renderEntities(entityItems)}
+              {isStreaming && !entityItems.length && <Loader size={16} className="animate-spin" />}
+            </div>
+
+            <div className="snapshot-section">
+              <div className="snapshot-label">Metrics</div>
+              <div className="streaming-text">
+                {renderSimpleList(
+                  metricItems,
+                  isStreaming ? 'Extracting...' : 'No financial metrics mentioned.'
+                )}
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div className="insight-card glass-panel">
-          <h3><Tags size={20} /> Financial Entities</h3>
-          {renderEntities(entities)}
-          {isStreaming && !entities && <Loader size={16} className="animate-spin" />}
-        </div>
-
-        <div className="insight-card glass-panel">
-          <h3><TrendingUp size={20} /> Financial Metrics</h3>
-          <div className="streaming-text">{renderSimpleList(metrics)}</div>
-        </div>
-
-        <div className="insight-card glass-panel">
-          <h3><TrendingUp size={20} /> Actionable Insights</h3>
-          <div className="streaming-text">{insights || (isStreaming ? <Loader size={16} className="animate-spin" /> : "N/A")}</div>
-        </div>
-
-        <div className="insight-card glass-panel">
-          <h3><CheckCircle2 size={20} /> Next Steps</h3>
-          <div className="streaming-text">{renderSimpleList(nextSteps)}</div>
+        <div className="dashboard-sidebar">
+          <div className="insight-card glass-panel">
+            <h3><CheckCircle2 size={20} /> Next Steps</h3>
+            <div className="streaming-text">
+              {renderSimpleList(
+                nextStepItems,
+                isStreaming ? 'Analyzing...' : 'No next steps generated.'
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
       {activeConv && (
-        <div className="glass-panel transcript-section">
-          <h3>Original Transcript (Whisper)</h3>
+        <div className="glass-panel transcript-section report-panel">
+          <h3>Original Conversation</h3>
           <div className="transcript-content">
             {activeConv.transcript}
           </div>
           {activeConv.audio_path && (
-            <div className="audio-player-wrapper">
-              <h4><Headphones size={20} color="var(--primary)" /> Original Audio Recording</h4>
+            <div className="transcript-audio-block">
+              <h4><Headphones size={20} color="var(--primary)" /> Audio Recording</h4>
               <audio
                 controls
                 src={`http://localhost:5000/api/audio/${activeConv.id}`}
